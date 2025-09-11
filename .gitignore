@@ -1,0 +1,12 @@
+# backups e artefatos
+*.bak
+*.log
+*.db
+
+# chaves e certificados
+*.key
+*.pem
+*.crt
+
+# OS
+.DS_Store
