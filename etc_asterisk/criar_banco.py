@@ -97,6 +97,20 @@ TABLES['saudacao'] = (
     """
 )
 
+TABLES['torpedo'] = (
+    """
+    CREATE TABLE IF NOT EXISTS torpedo (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        numero_origem VARCHAR(50),
+        pin_origem VARCHAR(10),
+        numero_destino VARCHAR(50),
+        pin_destino VARCHAR(10),
+        caminho_torpedo VARCHAR(255),
+        data_hora DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+    """
+)
+
 
 
 try:

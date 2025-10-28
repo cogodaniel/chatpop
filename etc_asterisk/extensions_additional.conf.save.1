@@ -97,7 +97,7 @@ exten => h,1,Goto(sair-chatpop,s,1)
 
 [participantes]
 exten => s,1,NoOp(CONHECER PARTICIPANTES)
-exten => s,n,Background(op2_menu) ;--------------TROCAR POR MENU------------------------
+exten => s,n,Background(beep) ;--------------TROCAR POR MENU------------------------
 exten => s,n,WaitExten(10)
 
 
@@ -141,7 +141,7 @@ exten => s,n,Set(POSICAO=$[${POSICAO} + 1])
 exten => s,n,Goto(ouvir-saudacao-participante-individualmente,s,1)
 
 exten => s,n(fim_lista),NoOp(FIM DA LISTA)
-exten => s,n,Playback(op2_fim_lista)
+; REPRODUZ MENSAGEM DE FIM DA LISTA
 exten => s,n,Goto(participantes,s,1)
 
 ; 3 - Convidar particpante da sala
@@ -165,8 +165,8 @@ exten => s,n,AGI(digitos_para_audio.py,${PIN_POSICAO})
 exten => s,n,Playback(usuario&${DIGITOS})
 exten => s,n,AGI(retorna_canal.py,${NUMERO_POSICAO},${PIN_POSICAO})
 exten => s,n,Set(GLOBAL(CANAL_CONVIDADO)=${CANAL})
-exten => s,n,ChanSpy(${CANAL},ox(0))
-exten => s,n,Background(op2_selecionar_participante)
+;----- FAZER UM CHANSPY DESTE CANAL
+;------------PLAYBACK MENU
 exten => s,n,WaitExten(10)
 
 exten => 1,1,Goto(convidar-participante-selecionar,s,1)
@@ -174,7 +174,7 @@ exten => 2,1,Goto(convidar-participante-proximo,s,1)
 exten => 3,1,Goto(convidar-participante-voltar-menu,s,1)
 
 exten => s,n(fim_lista),NoOp(FIM DA LISTA)
-exten => s,n,Playback(op2_fim_lista)
+; REPRODUZ MENSAGEM DE FIM DA LISTA
 exten => s,n,Goto(participantes,s,1)
 
 
@@ -185,21 +185,13 @@ exten => s,n,AGI(retorna_canal.py,${CALLERID(num)},${PIN})
 exten => s,n,Set(CANAL_ANFITRIAO=${CANAL})
 exten => s,n,AGI(digitos_para_audio.py,${PIN})
 exten => s,n,Set(GLOBAL(DIGITOS_ANFITRIAO)=${DIGITOS})
-exten => s,n,Background(op2_convidar_sala)
-exten => s,n,Read(SALA_TMP,,4)                    ; lê o valor para uma variável local
-exten => s,n,Set(GLOBAL(SALA_CONVIDADO)=${SALA_TMP}) ; armazena o valor na variável global
-;exten => s,n,NoOp(SALA_CONVIDADO global = ${GLOBAL(SALA_CONVIDADO)})
 exten => s,n,ChannelRedirect(${GLOBAL(CANAL_CONVIDADO)},convidar-participante-selecionado,s,1)
 
 [convidar-participante-selecionado]
 exten => s,1,NoOp(PARTICIPANTE SELECIONADO)
-exten => s,n,AGI(digitos_para_audio.py,${GLOBAL(SALA_CONVIDADO)})
-exten => s,n,Playback(usuario&${GLOBAL(DIGITOS_ANFITRIAO)}&op2_sala&${DIGITOS})
-exten => s,n,Background(op2_ouvir_novamente)
-
-exten => s,n,WaitExten(10)
-exten => 1,1,Goto(convidar-participante-selecionado,s,1)
-exten => 0,1,Goto(retorna-sala,s,1)
+exten => s,n,Playback(usuario&${GLOBAL(DIGITOS_ANFITRIAO)})
+exten => s,n,Set(GLOBAL(CANAL_CONVIDADO)=)
+exten => s,n,Set(GLOBAL(DIGITOS_ANFITRIAO)=)
 ; ---- PERGUNTAR SE QUER PARTICIPAR DA CONVERSA COM O ANFITRIAO
 ; ---- PEGAR CANAL_ANFITRIAO
 ; ---- FAZER BRIDGE ENTRE CANAL_CONVIDADO E CANAL_ANFITRIAO 
@@ -224,20 +216,52 @@ exten => s,n,Goto(participantes,s,1)
 ; 2 - Ouvir Torpedo
 
 [torpedo]
-exten => s,1,NoOp(TORPEDO)
-exten => s,n,Background(op3_menu)
-exten => s,n,WaitExten(10)
+exten => s,n,NoOp(GRAVAR TORPEDO)
+; ----- Background sobre o menu
+; ------ Tempo para escolher
 
 exten => 1,1,Goto(gravar-torpedo,s,1)
 exten => 2,1,Goto(ouvir-torpedo,s,1)
 
+; ==== VOLTAR A SALA
+exten => 0,1,NoOp(VOLTAR PARA SALA)
+exten => 0,n,Goto(retorna-sala,s,1)
+
+
+;  1 - Gravar Torpedo
+; --- SELECIONAR PARTICIPANTE
+; --- CRIAR TORPEDO
+; --- GRAVAR TORPEDO
+; --- REPRODUZIR SINAL PARA A PESSOA (MENSAGEM  = "VOCE RECEBEU UM TORPEDO, PARA MAIS INFOMACOES SELECIONE CONSULTE O MENU")
 
 [gravar-torpedo]
-exten => s,1,NoOp(GRAVAR TORPEDO)
+exten = s,1,NoOp(CONVIDAR PARTICIPANTE INDIVIDUALMENTE)
+exten => s,n,AGI(numero_para_pin.py,${CALLERID(num)})
+exten => s,n,AGI(consulta_sala.py,${CALLERID(num)},${PIN})
+exten => s,n,Set(POSICAO=0)
+exten => s,n,Goto(convidar-participante-individualmente,s,1)
+
+
+[gravar-torpedo-individualmente]
+exten => s,1,NoOp(OUVIR SAUDACAO DE CADA UM DOS PARTICIPANTES)
+exten => s,n,AGI(retorna_participante_sala.py,${SALA_ATUAL},${POSICAO})
+exten => s,n,GotoIf($["${PARTICIPANTE}" = "200"]?reproduz:fim_lista) ;======= VERIFICA MUDO USUARIO
+
+exten=> s,n(reproduz),NoOp(${POSICAO})
+exten => s,n,AGI(digitos_para_audio.py,${PIN_POSICAO})
+;exten => s,n,NoOp(${DIGITOS})
+;exten => s,n,AGI(retorna_saudacao.py,${NUMERO_POSICAO},${PIN_POSICAO})
+exten => s,n,Playback(usuario&${DIGITOS})
+exten => s,n,AGI(retorna_canal.py,${NUMERO_POSICAO},${PIN_POSICAO})
+exten => s,n,Set(GLOBAL(CANAL_CONVIDADO)=${CANAL})
+;----- FAZER UM CHANSPY DESTE CANAL
+;------------PLAYBACK MENU
+exten => s,n,WaitExten(10)
+
+
 
 
 [ouvir-torpedo]
-exten => s,1,NoOp(OUVIR TORPEDO)
 
 
 
